@@ -4,6 +4,7 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ArrowDown, ArrowUp, ArrowUpRight, BookOpen, Check, ChevronLeft, ChevronRight, Download, FilePlus2, FileText, Highlighter, Leaf, LockKeyhole, Maximize, Minus, MousePointer2, PanelLeftClose, PanelLeftOpen, Plus, Redo2, RotateCw, Search, ShieldCheck, Trash2, Type, Undo2, Upload, X } from 'lucide-react';
 import { applyEdit, demoPdf, extractPage, loadEditable, MAX_FILE_BYTES, mergePdf, type Edit } from './pdf';
 import { Thumbnail, Viewer } from './Viewer';
+import { MAX_ZOOM, MIN_ZOOM, stepZoom, ZOOM_PRESETS, type Zoom } from './zoom';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 type Version = { bytes: Uint8Array; label: string };
@@ -23,7 +24,8 @@ export default function App() {
   const [saved, setSaved] = useState<Uint8Array | null>(null);
   const [name, setName] = useState('');
   const [page, setPage] = useState(0);
-  const [zoom, setZoom] = useState(0);
+  const [zoom, setZoom] = useState<Zoom>('width');
+  const [renderedScale, setRenderedScale] = useState(1);
   const [tool, setTool] = useState<'read' | 'text' | 'highlight'>('read');
   const [text, setText] = useState('');
   const [size, setSize] = useState(16);
@@ -106,7 +108,7 @@ export default function App() {
     const hasForms = parsed.getForm().getFields().length > 0;
     setReadOnly(hasForms);
     setVersions([{ bytes: data, label: 'Original' }]); setCursor(0); setSaved(data);
-    setName(filename); setTool('read'); setZoom(0); setQuery(''); setShowSearch(false);
+    setName(filename); setTool('read'); setZoom('width'); setQuery(''); setShowSearch(false);
     setNotice(hasForms ? 'Opened in read-only mode. Interactive form editing is not supported yet.' : 'Opened locally. Your file stays on this device.');
   }
 
@@ -201,6 +203,7 @@ export default function App() {
 
   const disabled = !!busy;
   const noEdit = disabled || readOnly;
+  const currentScale = typeof zoom === 'number' ? zoom : renderedScale;
   return <div className={`app ${doc ? 'has-document' : ''}`}
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true); } }}
     onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }}
@@ -233,7 +236,19 @@ export default function App() {
         <div className="tool-group"><button title="Toggle pages sidebar" aria-label="Toggle pages sidebar" aria-expanded={sidebar} onClick={() => setSidebar(!sidebar)}>{sidebar ? <PanelLeftClose size={19} /> : <PanelLeftOpen size={19} />}</button><button title="Search document (Ctrl/⌘ F)" aria-label="Search document" aria-pressed={showSearch} onClick={() => { setShowSearch(!showSearch); setTimeout(() => searchInput.current?.focus(), 0); }}><Search size={19} /></button></div>
         <div className="tool-group"><button aria-pressed={tool === 'read'} onClick={() => setTool('read')}><MousePointer2 size={17} />Read</button><button disabled={noEdit} aria-pressed={tool === 'text'} onClick={() => setTool('text')}><Type size={17} />Add text</button><button disabled={noEdit} aria-pressed={tool === 'highlight'} onClick={() => setTool('highlight')}><Highlighter size={17} />Highlight</button></div>
         <div className="tool-group"><button aria-label="Undo" title="Undo (Ctrl/⌘ Z)" disabled={disabled || cursor === 0} onClick={() => history(-1)}><Undo2 size={18} /></button><button aria-label="Redo" title="Redo (Ctrl/⌘ Shift Z)" disabled={disabled || cursor === versions.length - 1} onClick={() => history(1)}><Redo2 size={18} /></button></div>
-        <div className="tool-group zoom-tools"><button aria-label="Zoom out" disabled={zoom !== 0 && zoom <= 0.25} onClick={() => setZoom(z => Math.max(0.25, (z || 1) - 0.25))}><Minus size={17} /></button><select aria-label="Zoom level" value={zoom} onChange={event => setZoom(Number(event.target.value))}><option value="0">Fit width</option>{[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3].map(z => <option key={z} value={z}>{z * 100}%</option>)}</select><button aria-label="Zoom in" disabled={zoom >= 3} onClick={() => setZoom(z => Math.min(3, (z || 1) + 0.25))}><Plus size={17} /></button><button aria-label="Fit width" onClick={() => setZoom(0)}><Maximize size={17} /></button></div>
+        <div className="tool-group zoom-tools">
+          <button aria-label="Zoom out" disabled={currentScale <= MIN_ZOOM} onClick={() => setZoom(z => stepZoom(typeof z === 'number' ? z : renderedScale, -1))}><Minus size={17} /></button>
+          <select aria-label="Zoom level" value={zoom} onChange={event => {
+            const value = event.target.value;
+            setZoom(value === 'width' || value === 'page' ? value : Number(value));
+          }}>
+            <option value="width">Fit width</option><option value="page">Fit page</option>
+            {typeof zoom === 'number' && !ZOOM_PRESETS.includes(zoom) && <option value={zoom}>{Math.round(zoom * 100)}%</option>}
+            {ZOOM_PRESETS.map(z => <option key={z} value={z}>{z * 100}%</option>)}
+          </select>
+          <button aria-label="Zoom in" disabled={currentScale >= MAX_ZOOM} onClick={() => setZoom(z => stepZoom(typeof z === 'number' ? z : renderedScale, 1))}><Plus size={17} /></button>
+          <button aria-label="Fit page" title="Fit the entire page" aria-pressed={zoom === 'page'} onClick={() => setZoom('page')}><Maximize size={17} /></button>
+        </div>
       </nav>
       {tool === 'text' && <div className="tool-options"><label>Text to add <input aria-label="Text to add" autoFocus placeholder="Write a note, then click on the page" value={text} maxLength={300} onChange={e => setText(e.target.value)} /></label><label>Size <select aria-label="Text size" value={size} onChange={e => setSize(Number(e.target.value))}>{[10, 12, 16, 20, 24, 32].map(n => <option key={n}>{n}</option>)}</select></label><span>Click on the page to place your text. Esc to cancel.</span></div>}
       {tool === 'highlight' && <div className="tool-options"><span className="yellow-swatch" /><span>Drag across an area to highlight it. This adds a permanent mark to your download; it does not redact content.</span></div>}
@@ -241,7 +256,7 @@ export default function App() {
       <div className={`workspace ${sidebar ? '' : 'sidebar-hidden'}`}>
         {sidebar && <aside className="sidebar" aria-label="Pages"><div className="sidebar-heading"><strong>Pages</strong><span>{doc.numPages}</span></div><div className="thumbnails">{Array.from({ length: doc.numPages }, (_, i) => <button className={`thumbnail ${i === page ? 'selected' : ''}`} key={i} aria-label={`Go to page ${i + 1}`} aria-current={i === page ? 'page' : undefined} disabled={disabled} onClick={() => setPage(i)}><div className="thumbnail-paper"><Thumbnail doc={doc} page={i} /></div><span>{i + 1}</span></button>)}</div><button className="add-pages" disabled={noEdit} onClick={() => mergeInput.current?.click()}><FilePlus2 size={17} />Add pages</button></aside>}
         <main className="document-main"><div className="page-actions"><span>PAGE {page + 1} OF {doc.numPages}</span><div><button aria-label="Move page earlier" title="Move page earlier" disabled={noEdit || page === 0} onClick={() => edit({ type: 'move', page, to: page - 1 })}><ArrowUp size={16} /></button><button aria-label="Move page later" title="Move page later" disabled={noEdit || page === doc.numPages - 1} onClick={() => edit({ type: 'move', page, to: page + 1 })}><ArrowDown size={16} /></button><button aria-label="Rotate page clockwise" title="Rotate page clockwise" disabled={noEdit} onClick={() => edit({ type: 'rotate', page })}><RotateCw size={16} /></button><button aria-label="Download this page" title="Download this page" disabled={noEdit} onClick={() => void run('Extracting page…', async () => { download(await extractPage(bytes!, page), `${name.replace(/\.pdf$/i, '')}-page-${page + 1}.pdf`); setNotice('Page download started.'); })}><Download size={16} /></button><button aria-label="Delete page" title="Delete page (can be undone)" disabled={noEdit || doc.numPages === 1} onClick={() => edit({ type: 'delete', page })}><Trash2 size={16} /></button></div></div>
-          <Viewer doc={doc} page={page} zoom={zoom} tool={tool} text={text} size={size} busy={disabled} onEdit={edit} onError={reportError} />
+          <Viewer doc={doc} page={page} zoom={zoom} tool={tool} text={text} size={size} busy={disabled} onEdit={edit} onError={reportError} onScale={setRenderedScale} />
           <div className="page-navigation"><button aria-label="Previous page" disabled={disabled || page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={18} /></button><label>Page <input key={`${page}-${doc.numPages}`} aria-label="Page number" type="number" min="1" max={doc.numPages} defaultValue={page + 1} onBlur={event => { const n = Number(event.target.value); if (Number.isInteger(n) && n >= 1 && n <= doc.numPages) setPage(n - 1); else event.target.value = String(page + 1); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /> of {doc.numPages}</label><button aria-label="Next page" disabled={disabled || page === doc.numPages - 1} onClick={() => setPage(page + 1)}><ChevronRight size={18} /></button></div>
         </main>
       </div><div className="statusbar"><span><ShieldCheck size={14} />Processed on your device</span><span>{readOnly ? 'Read-only form' : 'Original file unchanged'} · {Math.max(1, Math.round((bytes?.length || 0) / 1024)).toLocaleString()} KB</span></div>

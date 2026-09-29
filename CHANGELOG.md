@@ -1,5 +1,12 @@
 # Leafrune release notes
 
+## Unreleased
+
+- Added **Fit page** in the zoom menu and toolbar, adapting to orientation, window size, sidebar, and search-panel changes.
+- Corrected fit-width sizing: margins are no longer subtracted twice, and large displays are no longer limited to 150%.
+- Zoom buttons now step from the actual fitted scale (25% larger / 20% smaller), instead of assuming a 100% starting point. Manual zoom ranges from 10% to 800%.
+- Added fit/zoom regressions covering desktop/mobile dimensions, rotated pages, search, and oversized sheets.
+
 ## 0.1.0 — 2026-09-29 (private preview)
 
 First functional preview. No public release, package, website, or build has been published.

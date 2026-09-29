@@ -16,7 +16,7 @@ The runner may reawaken this maintainer on mail or after idle. This document des
 
 ## Near-term backlog
 
-- Continuous/multi-page reading, page-fit mode, improved mobile tools, keyboard-accessible annotation placement, and screen-reader review.
+- Continuous/multi-page reading, improved mobile tools, keyboard-accessible annotation placement, and screen-reader review. Fit-page mode is implemented; see the testing log.
 - Unicode font embedding, password support, links/bookmarks, and genuine editable annotation objects.
 - AcroForm and signed-document fidelity; explicit capability checks before structural edits. Keep unsupported form mutations blocked until round trips are proven.
 - Persistent recovery with deliberate privacy controls; offline installation and updates.

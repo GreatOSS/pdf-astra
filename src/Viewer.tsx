@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { TextLayer, type PDFDocumentProxy, type PageViewport } from 'pdfjs-dist';
 import type { Edit } from './pdf';
+import { fitScale, type Zoom } from './zoom';
 
 type Props = {
-  doc: PDFDocumentProxy; page: number; zoom: number; tool: 'read' | 'text' | 'highlight';
+  doc: PDFDocumentProxy; page: number; zoom: Zoom; tool: 'read' | 'text' | 'highlight';
   text: string; size: number; busy: boolean;
   onEdit: (edit: Edit) => void; onError: (message: string) => void;
+  onScale: (scale: number) => void;
 };
 
-export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onError }: Props) {
+export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onError, onScale }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const paper = useRef<HTMLDivElement>(null);
   const viewport = useRef<PageViewport | null>(null);
-  const [width, setWidth] = useState(800);
+  const [{ width, height }, setDimensions] = useState({ width: 0, height: 0 });
   const [ready, setReady] = useState(false);
   const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -22,12 +24,20 @@ export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onErro
   }, [page]);
 
   useEffect(() => {
-    const observer = new ResizeObserver(entries => setWidth(entries[0].contentRect.width));
+    if (typeof zoom !== 'number') host.current?.scrollTo(0, 0);
+  }, [zoom]);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      setDimensions(previous => previous.width === width && previous.height === height ? previous : { width, height });
+    });
     observer.observe(host.current!);
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
+    if (width <= 0 || height <= 0) return;
     let cancelled = false;
     let render: ReturnType<Awaited<ReturnType<PDFDocumentProxy['getPage']>>['render']> | undefined;
     let layer: TextLayer | undefined;
@@ -40,8 +50,9 @@ export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onErro
       const pdfPage = await doc.getPage(page + 1);
       if (cancelled) return;
       const base = pdfPage.getViewport({ scale: 1 });
-      const scale = zoom === 0 ? Math.min((width - 48) / base.width, 1.5) : zoom;
-      const view = pdfPage.getViewport({ scale: Math.max(0.15, scale) });
+      const scale = fitScale(zoom, base.width, base.height, width, height);
+      const view = pdfPage.getViewport({ scale });
+      onScale(scale);
       viewport.current = view;
       element.style.width = `${view.width}px`;
       element.style.height = `${view.height}px`;
@@ -61,12 +72,14 @@ export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onErro
       const textDiv = document.createElement('div');
       textDiv.className = 'textLayer';
       element.append(textDiv);
-      layer = new TextLayer({ textContentSource: await pdfPage.getTextContent(), container: textDiv, viewport: view });
+      const textContentSource = await pdfPage.getTextContent();
+      if (cancelled) return;
+      layer = new TextLayer({ textContentSource, container: textDiv, viewport: view });
       await layer.render();
       if (!cancelled) setReady(true);
     })().catch(error => { if (!cancelled) onError(`Could not display this page: ${error.message}`); });
     return () => { cancelled = true; render?.cancel(); layer?.cancel(); };
-  }, [doc, page, zoom, width, onError]);
+  }, [doc, page, zoom, width, height, onError, onScale]);
 
   function position(event: React.PointerEvent) {
     const rect = paper.current!.getBoundingClientRect();

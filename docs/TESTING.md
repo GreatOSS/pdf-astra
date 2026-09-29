@@ -1,5 +1,26 @@
 # Hands-on testing and maintenance log
 
+## 2026-09-29 — reading fit and zoom follow-up
+
+Triage: no new mail or PRs. Continued the reading-UX work from issue #1 without changing Leafrune's established name or package/repository identity.
+
+### Reproduction and changes
+
+- At a 390×844 browser viewport, with the sidebar open, **Zoom in** changed a 223 px-wide page to 765 px (3.43×). The old control assumed fit-width meant 100%.
+- Inspection confirmed that fit-width subtracted 48 px from a ResizeObserver content box that already excluded padding, and capped automatic fitting at 150%.
+- Added a fit-page mode using both available dimensions. Kept fit-width as the opening default. Automatic fitting has no minimum scale, so unusually large sheets can still fit; canvas memory bounds remain in place.
+- Zoom steps now start from the rendered scale. Reserved the scrollbar gutter to avoid feedback between fitting and scrollbar appearance.
+- Added a cancellation check after asynchronous text extraction so resize-triggered rendering cannot attach an obsolete text layer.
+
+### Hands-on verification
+
+- Used the updated **production preview** on localhost:4173. At 1280×900, selected Fit page and visually confirmed the entire portrait page, including its footer, was visible.
+- Navigated to the landscape page, opened search, searched for “perspective”, and resized to 390×844. The complete page remained visible beneath search results.
+- Switched to Fit width: measured 350 px. Clicked Zoom in: measured 437.5 px, exactly 1.25×. Returned to Fit page and inspected a mobile screenshot.
+- Automated checks: **6 Node tests + 6 Chromium workflows passed**, including all prior export/annotation regressions. New browser checks cover fit containment after rotation/sidebar/search/window changes, exact available-width usage, and zoom in/out from both small and large fitted scales. TypeScript and production build passed.
+
+Remaining: continuous reading, mobile toolbar discoverability, keyboard annotation placement, screen-reader and other-browser validation, and the performance/fidelity gaps listed below. Issue #1 remains open for those items. No public deployment or package publication.
+
 ## 2026-09-29 — Leafrune 0.1.0 preview
 
 ### Environment and inputs

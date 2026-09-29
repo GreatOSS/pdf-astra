@@ -7,7 +7,7 @@ Leafrune is an early **0.1.0 preview**, maintained in [GreatOSS/pdf-astra](https
 ## What works today
 
 - Open or drop a PDF, or try the built-in three-page sample.
-- Read portrait, landscape, rotated, and cropped pages; zoom and fit width.
+- Read portrait, landscape, rotated, and cropped pages; fit the entire page or its width, and zoom relative to the current view.
 - Select/copy text and find matching pages.
 - Add Latin text and translucent area highlights.
 - Rotate, move, delete, extract, and append pages from another PDF.
