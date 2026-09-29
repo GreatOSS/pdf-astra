@@ -18,6 +18,7 @@ Triage: no new mail or PRs. Continued the reading-UX work from issue #1 without 
 - Navigated to the landscape page, opened search, searched for “perspective”, and resized to 390×844. The complete page remained visible beneath search results.
 - Switched to Fit width: measured 350 px. Clicked Zoom in: measured 437.5 px, exactly 1.25×. Returned to Fit page and inspected a mobile screenshot.
 - Automated checks: **6 Node tests + 6 Chromium workflows passed**, including all prior export/annotation regressions. New browser checks cover fit containment after rotation/sidebar/search/window changes, exact available-width usage, and zoom in/out from both small and large fitted scales. TypeScript and production build passed.
+- The first remote CI run caught the annotation test measuring a highlight surface before rendering finished. Added an explicit visibility wait and avoided height-triggered repaints outside fit-page mode. Rechecked the complete browser suite before pushing the follow-up.
 
 Remaining: continuous reading, mobile toolbar discoverability, keyboard annotation placement, screen-reader and other-browser validation, and the performance/fidelity gaps listed below. Issue #1 remains open for those items. No public deployment or package publication.
 

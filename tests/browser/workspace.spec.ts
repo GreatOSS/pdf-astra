@@ -90,6 +90,7 @@ test('text and highlights align on all crop-box rotations and non-default user u
     expect(placed.y).toBeGreaterThan(box.y + 100);
     await page.getByRole('button', { name: 'Highlight', exact: true }).click();
     const highlight = page.getByLabel('Drag to highlight an area');
+    await expect(highlight).toBeVisible();
     const area = (await highlight.boundingBox())!;
     await page.mouse.move(area.x + 115, area.y + 125);
     await page.mouse.down();

@@ -18,6 +18,9 @@ export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onErro
   const [ready, setReady] = useState(false);
   const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
+  // Toolbar/search height changes affect fit-page only. Avoid repainting a
+  // width-fitted or fixed-scale page when switching annotation tools.
+  const fitHeight = zoom === 'page' ? height : 0;
 
   useEffect(() => {
     host.current?.scrollTo(0, 0);
@@ -37,7 +40,7 @@ export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onErro
   }, []);
 
   useEffect(() => {
-    if (width <= 0 || height <= 0) return;
+    if (width <= 0 || (zoom === 'page' && fitHeight <= 0)) return;
     let cancelled = false;
     let render: ReturnType<Awaited<ReturnType<PDFDocumentProxy['getPage']>>['render']> | undefined;
     let layer: TextLayer | undefined;
@@ -50,7 +53,7 @@ export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onErro
       const pdfPage = await doc.getPage(page + 1);
       if (cancelled) return;
       const base = pdfPage.getViewport({ scale: 1 });
-      const scale = fitScale(zoom, base.width, base.height, width, height);
+      const scale = fitScale(zoom, base.width, base.height, width, fitHeight);
       const view = pdfPage.getViewport({ scale });
       onScale(scale);
       viewport.current = view;
@@ -79,7 +82,7 @@ export function Viewer({ doc, page, zoom, tool, text, size, busy, onEdit, onErro
       if (!cancelled) setReady(true);
     })().catch(error => { if (!cancelled) onError(`Could not display this page: ${error.message}`); });
     return () => { cancelled = true; render?.cancel(); layer?.cancel(); };
-  }, [doc, page, zoom, width, height, onError, onScale]);
+  }, [doc, page, zoom, width, fitHeight, onError, onScale]);
 
   function position(event: React.PointerEvent) {
     const rect = paper.current!.getBoundingClientRect();
