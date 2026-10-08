@@ -211,7 +211,7 @@ export default function App() {
     <input ref={fileInput} data-testid="open-file" type="file" accept=".pdf,application/pdf" hidden onChange={event => { chooseFile(event.target.files?.[0]); event.target.value = ''; }} />
     <input ref={mergeInput} data-testid="merge-file" type="file" accept=".pdf,application/pdf" hidden onChange={event => { chooseFile(event.target.files?.[0], true); event.target.value = ''; }} />
     <header className="header">
-      <a className="brand" href="#" onClick={event => { event.preventDefault(); goHome(); }} aria-label="Leafrune home"><img src="/leafrune.svg" alt="" /><span>Leafrune<span className="preview-tag">PREVIEW</span></span></a>
+      <a className="brand" href="#" onClick={event => { event.preventDefault(); goHome(); }} aria-label="Leafrune home"><img src={`${import.meta.env.BASE_URL}leafrune.svg`} alt="" /><span>Leafrune<span className="preview-tag">PREVIEW</span></span></a>
       {doc ? <div className="document-title"><strong title={name}>{name}</strong><span>{readOnly ? 'Read-only · interactive form' : dirty ? 'Changes not downloaded' : 'Local document'} <span className={dirty ? 'unsaved-dot' : 'saved-dot'} /></span></div> : <span className="header-note">A little less friction. A little more focus.</span>}
       <div className="header-actions"><button aria-label="Quick guide" className="quiet" onClick={showGuide}><BookOpen size={17} /><span>Quick guide</span></button>{doc && <><button aria-label="Open" disabled={disabled} onClick={() => fileInput.current?.click()}><Upload size={16} /><span>Open</span></button><button aria-label="Download PDF" className="primary" onClick={save} disabled={disabled}><Download size={16} /><span>Download PDF</span></button></>}</div>
     </header>
