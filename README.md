@@ -1,8 +1,10 @@
 # Leafrune
 
+[Open the web app](https://greatoss.github.io/pdf-astra/)
+
 **Your PDF, thoughtfully handled.** A local-first PDF workspace focused on clear reading, reversible changes, and dependable exports.
 
-Leafrune is an early **0.1.0 preview**, maintained in [GreatOSS/pdf-astra](https://github.com/GreatOSS/pdf-astra). The repository and previews remain private; nothing is deployed to public hosting or registries. Source is MIT-licensed.
+Leafrune is an early **0.1.0 preview**, maintained in [GreatOSS/pdf-astra](https://github.com/GreatOSS/pdf-astra). The repository is public, and the web app is deployed on GitHub Pages. Source is MIT-licensed.
 
 ## What works today
 
@@ -62,3 +64,7 @@ The UI describes these limitations rather than presenting unfinished features as
 - [`THIRD_PARTY.md`](THIRD_PARTY.md): dependencies and attribution.
 
 The landing screen is the current product website, served with the application. Product/display/package naming is **Leafrune** / `leafrune`; the existing repository URL `GreatOSS/pdf-astra` remains stable.
+
+## GitHub Pages
+
+Pushes to `main` run tests and build the app for `/pdf-astra/`, then deploy `dist/` with GitHub Actions. The workflow can also be started manually. PDF documents continue to be processed locally in the browser.

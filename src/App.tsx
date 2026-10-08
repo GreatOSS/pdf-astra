@@ -89,8 +89,8 @@ export default function App() {
   }
 
   async function display(data: Uint8Array, target: number) {
-    const loading = getDocument({ data: data.slice(), cMapUrl: '/pdfjs/cmaps/', cMapPacked: true,
-      standardFontDataUrl: '/pdfjs/standard_fonts/', wasmUrl: '/pdfjs/wasm/' });
+    const loading = getDocument({ data: data.slice(), cMapUrl: `${import.meta.env.BASE_URL}pdfjs/cmaps/`, cMapPacked: true,
+      standardFontDataUrl: `${import.meta.env.BASE_URL}pdfjs/standard_fonts/`, wasmUrl: `${import.meta.env.BASE_URL}pdfjs/wasm/` });
     let next: PDFDocumentProxy;
     try { next = await loading.promise; } catch (e) { await loading.destroy(); throw e; }
     const previous = activeDoc.current;
